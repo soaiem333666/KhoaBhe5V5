@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KhoaBhe Mobile - Cross Platform</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; -webkit-user-select: none; }
+        body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+        
+        #game-frame {
+            width: 100vw;
+            height: 100vh;
+            max-width: 1280px;
+            max-height: 720px;
+            position: relative;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .screen { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: none; flex-direction: column; }
+        .screen.active { display: flex; }
+
+        /* 1. MAN HINH DANG NHAP */
+        #login-screen {
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(10, 15, 30, 0.85)), 
+                        url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=1200') center/cover;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logo-box { text-align: center; margin-top: 20px; }
+        .logo-title {
+            font-size: min(8vw, 48px); font-weight: 900; text-transform: uppercase;
+            background: linear-gradient(180deg, #ffffff 0%, #ffe600 40%, #b8860b 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+        .logo-sub { font-size: min(4vw, 18px); letter-spacing: 4px; color: #e0e0e0; text-transform: uppercase; font-weight: bold; }
+
+        .login-btns { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; justify-content: center; }
+        .btn-main {
+            padding: 10px 25px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.4); color: #fff; text-shadow: 0 1px 2px #000;
+        }
+        .btn-guest { background: linear-gradient(180deg, #7f8c8d, #34495e); }
+        .btn-garena { background: linear-gradient(180deg, #e74c3c, #c0392b); }
+
+        /* 2. MAN HINH CHON TUONG */
+        #hero-screen { background: #0f172a; padding: 15px; justify-content: space-between; align-items: center; }
+        .hero-list { display: flex; gap: 15px; margin-top: 10px; width: 100%; justify-content: center; }
+        .hero-card {
+            width: 30%; max-width: 160px; height: 220px; border: 2px solid #334155; border-radius: 8px;
+            background-size: cover; background-position: center; cursor: pointer; position: relative;
+        }
+        .hero-card.selected { border-color: #f59e0b; box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
+        .hero-info { position: absolute; bottom: 0; width: 100%; padding: 8px; background: rgba(0,0,0,0.8); text-align: center;}
+        .hero-name { font-size: 14px; font-weight: bold; color: #ffeb3b; }
+
+        /* 3. GAME CANVAS & HUD */
+        #battle-screen { position: relative; width: 100%; height: 100%; }
+        canvas { width: 100%; height: 100%; background: #1a2332; }
+        .hud-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        .stats-bar {
+            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7);
+            padding: 5px 12px; border-radius: 6px; font-size: 12px; display: flex; gap: 10px; border: 1px solid #475569;
+        }
+
+        /* JOYSTICK CHO DIEN THOAI */
+        #joystick-zone {
+            position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px;
+            background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%; pointer-events: auto; touch-action: none;
+        }
+        #joystick-stick {
+            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
+            background: rgba(245, 158, 11, 0.8); border-radius: 50%; pointer-events: none;
+        }
+
+        /* NUT CHIÊU THỨC DI DỘNG */
+        .skill-bar-mobile {
+            position: absolute; bottom: 15px; right: 15px; pointer-events: auto;
+            display: flex; gap: 10px; align-items: flex-end;
+        }
+        .btn-skill {
+            width: 55px; height: 55px; border-radius: 50%; background: #1e293b;
+            border: 2px solid #f59e0b; color: #fff; font-weight: bold; font-size: 12px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+        }
+        .btn-skill:active { background: #d97706; transform: scale(0.9); }
+        .btn-attack { width: 70px; height: 70px; background: #dc2626; border-color: #fca5a5; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div id="game-frame">
+    <!-- MAN HINH DANG NHAP -->
+    <div id="login-screen" class="screen active">
+        <div style="font-size: 11px; border: 1px solid #d4af37; padding: 2px 8px; border-radius: 10px; color: #ffeb3b;">18+ | KhoaBhe Mobile Cross-Platform</div>
+        <div class="logo-box">
+            <h1 class="logo-title">KhoaBhe Mobile</h1>
+            <div class="logo-sub">Arena of Valor</div>
+        </div>
+        <div style="text-align: center;">
+            <div class="login-btns">
+                <button class="btn-main btn-guest" onclick="goToHeroSelect()">ĐĂNG NHẬP KHÁCH</button>
+                <button class="btn-main btn-garena" onclick="goToHeroSelect()">GARENA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAN HINH CHON TUONG -->
+    <div id="hero-screen" class="screen">
+        <h3 style="color: #f59e0b; margin-top: 5px;">CHỌN TƯỚNG XUẤT TRẬN</h3>
+        <div class="hero-list">
+            <div class="hero-card selected" onclick="selectHero('valhein', this)" style="background-image: url('https://images.unsplash.com/photo-1563089145-599997674d42?q=80&w=300');">
+                <div class="hero-info"><div class="hero-name">Valhein</div></div>
+            </div>
+            <div class="hero-card" onclick="selectHero('krixi', this)" style="background-image: url('https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=300');">
+                <div class="hero-info"><div class="hero-name">Krixi</div></div>
+            </div>
+            <div class="hero-card" onclick="selectHero('arthur', this)" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=300');">
+                <div class="hero-info"><div class="hero-name">Arthur</div></div>
+            </div>
+        </div>
+        <button class="btn-main btn-garena" style="width: 200px; margin-bottom: 10px;" onclick="startBattle()">VÀO TRẬN ĐẤU</button>
+    </div>
+
+    <!-- DAU TRUONG CANVAS -->
+    <div id="battle-screen" class="screen">
+        <canvas id="canvas"></canvas>
+        <div class="hud-overlay">
+            <div class="stats-bar">
+                <div>Tướng: <span id="hud-hero" style="color: #ffeb3b;">-</span></div>
+                <div>Kills: <span id="hud-kills" style="color: #22c55e;">0</span></div>
+            </div>
+            
+            <!-- Joystick cho đtdđ -->
+            <div id="joystick-zone">
+                <div id="joystick-stick"></div>
+            </div>
+
+            <!-- Nút bấm chiêu cho mobile -->
+            <div class="skill-bar-mobile">
+                <button class="btn-skill" onclick="castSkill('Q')">C1 (Q)</button>
+                <button class="btn-skill" onclick="castSkill('W')">C2 (W)</button>
+                <button class="btn-skill" style="border-color: #ef4444;" onclick="castSkill('R')">R (Ulti)</button>
+                <button class="btn-skill btn-attack" onclick="castSkill('ATTACK')">ĐÁNH</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedHero = 'valhein';
+    let canvas, ctx, gameLoop;
+
+    function showScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function goToHeroSelect() { showScreen('hero-screen'); }
+
+    function selectHero(heroName, el) {
+        selectedHero = heroName;
+        document.querySelectorAll('.hero-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    }
+
+    // Engine Game
+    let player = { x: 100, y: 180, radius: 15, speed: 3.5, color: '#3b82f6' };
+    let enemyCore = { x: 850, y: 180, radius: 35, hp: 2000, maxHp: 2000 };
+    let bullets = [], minions = [], kills = 0;
+    let joystickDir = { x: 0, y: 0 };
+    let keys = {};
+
+    function startBattle() {
+        showScreen('battle-screen');
+        canvas = document.getElementById('canvas');
+        canvas.width = 960;
+        canvas.height = 540;
+        ctx = canvas.getContext('2d');
+        document.getElementById('hud-hero').innerText = selectedHero.toUpperCase();
+
+        // Điểu khiển PC (Bàn phím)
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        // Khởi tạo Joystick cho Điện thoại
+        setupJoystick();
+
+        setInterval(spawnMinion, 5000);
+        gameLoop = setInterval(update, 1000 / 60);
+    }
+
+    function setupJoystick() {
+        const zone = document.getElementById('joystick-zone');
+        const stick = document.getElementById('joystick-stick');
+        let active = false;
+
+        const handleMove = (e) => {
+            if (!active) return;
+            const touch = e.touches ? e.touches[0] : e;
+            const rect = zone.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            let dx = touch.clientX - centerX;
+            let dy = touch.clientY - centerY;
+            let dist = Math.hypot(dx, dy);
+            let maxDist = 35;
+
+            if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+            }
+
+            stick.style.transform = `translate(${dx}px, ${dy}px)`;
+            joystickDir.x = dx / maxDist;
+            joystickDir.y = dy / maxDist;
+        };
+
+        const handleEnd = () => {
+            active = false;
+            stick.style.transform = 'translate(0px, 0px)';
+            joystickDir = { x: 0, y: 0 };
+        };
+
+        zone.addEventListener('touchstart', (e) => { active = true; handleMove(e); });
+        zone.addEventListener('touchmove', handleMove);
+        zone.addEventListener('touchend', handleEnd);
+    }
+
+    function spawnMinion() {
+        minions.push({ x: enemyCore.x - 30, y: enemyCore.y + (Math.random() * 60 - 30), radius: 10, hp: 200, speed: 1.2 });
+    }
+
+    function castSkill(type) {
+        let size = type === 'R' ? 12 : 6;
+        let dmg = type === 'R' ? 250 : 80;
+        bullets.push({ x: player.x, y: player.y, dx: 7, dy: (Math.random() - 0.5) * 1.5, radius: size, damage: dmg, color: type === 'R' ? '#ef4444' : '#f59e0b' });
+    }
+
+    function update() {
+        // Di chuyển qua Bàn phím (PC)
+        if (keys['w'] || keys['arrowup']) player.y -= player.speed;
+        if (keys['s'] || keys['arrowdown']) player.y += player.speed;
+        if (keys['a'] || keys['arrowleft']) player.x -= player.speed;
+        if (keys['d'] || keys['arrowright']) player.x += player.speed;
+
+        // Di chuyển qua Joystick (Điện thoại)
+        player.x += joystickDir.x * player.speed;
+        player.y += joystickDir.y * player.speed;
+
+        // Giới hạn trong bản đồ
+        player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+        player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+        // Cập nhật Đạn
+        bullets.forEach((b, index) => {
+            b.x += b.dx; b.y += b.dy;
+            minions.forEach((m, mIdx) => {
+                if (Math.hypot(b.x - m.x, b.y - m.y) < b.radius + m.radius) {
+                    m.hp -= b.damage;
+                    bullets.splice(index, 1);
+                    if (m.hp <= 0) {
+                        minions.splice(mIdx, 1);
+                        kills++;
+                        document.getElementById('hud-kills').innerText = kills;
+                    }
+                }
+            });
+
+            if (Math.hypot(b.x - enemyCore.x, b.y - enemyCore.y) < b.radius + enemyCore.radius) {
+                enemyCore.hp -= b.damage;
+                bullets.splice(index, 1);
+                if (enemyCore.hp <= 0) {
+                    alert("VICTORY! BẠN ĐÃ CHIẾN THẮNG!");
+                    clearInterval(gameLoop);
+                    location.reload();
+                }
+            }
+        });
+
+        minions.forEach(m => m.x -= m.speed);
+        render();
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Làn đường
+        ctx.fillStyle = '#242e42';
+        ctx.fillRect(0, 100, canvas.width, 160);
+
+        // Nhà chính Địch
+        ctx.beginPath();
+        ctx.arc(enemyCore.x, enemyCore.y, enemyCore.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+
+        // Lính
+        minions.forEach(m => {
+            ctx.beginPath();
+            ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f87171';
+            ctx.fill();
+        });
+
+        // Tướng
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+        ctx.fillStyle = player.color;
+        ctx.fill();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Đạn
+        bullets.forEach(b => {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+            ctx.fillStyle = b.color;
+            ctx.fill();
+        });
+    }
+</script>
+</body>
+</html>
